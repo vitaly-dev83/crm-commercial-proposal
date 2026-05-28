@@ -1,0 +1,20 @@
+﻿# Vendor (Composer зависимости)
+/vendor/
+
+# Папка с созданными КП
+/proposals/
+
+# Логи
+*.log
+
+# Файлы IDE
+.vscode/
+.idea/
+
+# Системные файлы
+Thumbs.db
+.DS_Store
+
+# Файлы с паролями/ключами
+.env
+config_local.php

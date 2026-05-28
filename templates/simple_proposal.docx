@@ -1,0 +1,12 @@
+КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ
+
+Номер сделки: ${deal_number}
+Клиент: ${client_name}
+Дата: ${proposal_date}
+
+Спецификация:
+${specification_table}
+
+Итого: ${total_amount} руб.
+
+Условия оплаты: ${payment_terms}

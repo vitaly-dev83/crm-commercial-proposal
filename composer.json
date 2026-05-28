@@ -1,0 +1,21 @@
+{
+    "name": "asti/crm-system",
+
+    "description": "CRM ASTI Commercial Proposal Generator",
+
+    "type": "project",
+
+    "require": {
+
+        "phpoffice/phpword": "^1.0",
+
+        "phpmailer/phpmailer": "^6.8",
+        "tecnickcom/tcpdf": "^6.11"
+
+    },
+
+    "license": "proprietary",
+
+    "minimum-stability": "stable"
+
+}
