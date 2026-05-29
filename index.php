@@ -1,5 +1,5 @@
 ﻿<?php
-// index.php - CRM система для мебельной компании ASTI (DOCX + PDF на одной странице)
+// index.php - CRM система для мебельной компании ASTI (с БД)
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -9,15 +9,48 @@ use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\SimpleType\Jc;
 
+// Подключение к базе данных
+$host = 'db';           // для Docker
+$dbname = 'crm_asti';
+$user = 'root';
+$pass = 'rootpassword';
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Ошибка подключения к БД: " . $e->getMessage());
+}
+
 $generationMessage = '';
 $generationError = '';
 $downloadLink = '';
 
+// Получаем список клиентов для выпадающего списка
+$clients = [];
+$stmt = $pdo->query("SELECT id, name, company FROM clients ORDER BY name");
+$clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Получаем список товаров
+$productsList = [];
+$stmt = $pdo->query("SELECT id, name, price FROM products ORDER BY name");
+$productsList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_docx'])) {
     try {
+        // Если выбран существующий клиент
+        if (!empty($_POST['client_id'])) {
+            $stmt = $pdo->prepare("SELECT name, company FROM clients WHERE id = ?");
+            $stmt->execute([$_POST['client_id']]);
+            $client = $stmt->fetch(PDO::FETCH_ASSOC);
+            $clientName = $client['name'];
+            $clientCompany = $client['company'];
+        } else {
+            $clientName = htmlspecialchars($_POST['client_name'] ?? '');
+            $clientCompany = htmlspecialchars($_POST['client_company'] ?? '');
+        }
+        
         $companyName = htmlspecialchars($_POST['company_name'] ?? 'АСТИ Мебель');
-        $clientName = htmlspecialchars($_POST['client_name'] ?? 'Иванов Иван Иванович');
-        $clientCompany = htmlspecialchars($_POST['client_company'] ?? 'ООО "Эльдорадо"');
         $discount = floatval($_POST['discount'] ?? 0);
         
         $products = $_POST['products'] ?? [];
@@ -25,9 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_docx'])) {
         $prices = $_POST['prices'] ?? [];
         
         if (empty($products) || empty($products[0])) {
-            $products = ['Кухонный гарнитур'];
-            $quantities = [1];
-            $prices = [0];
+            throw new Exception('Добавьте хотя бы один товар');
         }
         
         $phpWord = new PhpWord();
@@ -92,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_docx'])) {
         $section->addTextBreak(1.2);
         
         // Обращение
-        $section->addText('Уважаемый ' . $clientName . '!', ['bold' => true, 'size' => 11, 'color' => '2c3e50']);
+        $firstName = explode(' ', $clientName)[0];
+        $section->addText('Уважаемый(ая) ' . $firstName . '!', ['bold' => true, 'size' => 11, 'color' => '2c3e50']);
         $section->addText('Благодарим Вас за обращение в компанию "АСТИ Мебель". Направляем коммерческое предложение:', 
             ['size' => 11, 'color' => '2c3e50']);
         $section->addTextBreak(0.8);
@@ -193,16 +225,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_docx'])) {
             mkdir('proposals', 0777, true);
         }
         
+        // Сохраняем в базу данных
+        $stmt = $pdo->prepare("INSERT INTO proposals (client_id, proposal_number, date, total, discount) VALUES (?, ?, ?, ?, ?)");
+        $clientId = !empty($_POST['client_id']) ? $_POST['client_id'] : null;
+        $proposalNumber = 'АМ-' . date('Ymd') . '-' . rand(100, 999);
+        $stmt->execute([$clientId, $proposalNumber, date('Y-m-d'), $finalTotal, $discount]);
+        $proposalId = $pdo->lastInsertId();
+        
+        // Сохраняем позиции
+        $stmt = $pdo->prepare("INSERT INTO proposal_items (proposal_id, product_name, quantity, price, total) VALUES (?, ?, ?, ?, ?)");
+        foreach ($products as $idx => $product) {
+            if (!empty($product)) {
+                $qty = floatval($quantities[$idx] ?? 1);
+                $price = floatval($prices[$idx] ?? 0);
+                $sum = $qty * $price;
+                $stmt->execute([$proposalId, $product, $qty, $price, $sum]);
+            }
+        }
+        
         $filename = 'proposals/КП_АСТИ_Мебель_' . date('Y-m-d_H-i-s') . '.docx';
         $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
         $objWriter->save($filename);
         
-        $generationMessage = "✅ DOCX успешно создано!";
+        $generationMessage = "✅ DOCX успешно создано! Данные сохранены в БД.";
         $downloadLink = $filename;
         
     } catch (Exception $e) {
         $generationError = "❌ Ошибка DOCX: " . $e->getMessage();
     }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_pdf'])) {
+    ?>
+    <form id="pdfForm" method="POST" action="generate_pdf.php" target="_blank">
+        <input type="hidden" name="company_name" value="<?php echo htmlspecialchars($_POST['company_name'] ?? 'АСТИ Мебель'); ?>">
+        <input type="hidden" name="client_name" value="<?php echo htmlspecialchars($_POST['client_name'] ?? ''); ?>">
+        <input type="hidden" name="client_company" value="<?php echo htmlspecialchars($_POST['client_company'] ?? ''); ?>">
+        <input type="hidden" name="client_id" value="<?php echo htmlspecialchars($_POST['client_id'] ?? ''); ?>">
+        <input type="hidden" name="discount" value="<?php echo htmlspecialchars($_POST['discount'] ?? 0); ?>">
+        <?php
+        if (isset($_POST['products']) && is_array($_POST['products'])) {
+            foreach ($_POST['products'] as $idx => $product) {
+                if (!empty($product)) {
+                    echo '<input type="hidden" name="products[]" value="' . htmlspecialchars($product) . '">';
+                    echo '<input type="hidden" name="quantities[]" value="' . htmlspecialchars($_POST['quantities'][$idx] ?? 1) . '">';
+                    echo '<input type="hidden" name="prices[]" value="' . htmlspecialchars($_POST['prices'][$idx] ?? 0) . '">';
+                }
+            }
+        }
+        ?>
+    </form>
+    <script>document.getElementById('pdfForm').submit();</script>
+    <?php
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -211,18 +286,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_docx'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>АСТИ Мебель - Генератор КП</title>
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;padding:30px}
         .container{max-width:1000px;margin:0 auto}
-        .header{background:#fff;border-radius:20px;padding:40px;margin-bottom:30px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.1)}
-        .header h1{font-size:2.5em;background:linear-gradient(135deg,#e74c3c,#f39c12);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .header p{color:#666;margin-top:8px}
+        .header{background:#fff;border-radius:20px;padding:20px 30px;margin-bottom:30px;display:flex;align-items:center;gap:20px;box-shadow:0 10px 30px rgba(0,0,0,0.1)}
+        .logo{flex-shrink:0}
+        .logo img{width:70px;height:70px;border-radius:12px}
+        .logo-placeholder{width:70px;height:70px;background:linear-gradient(135deg,#e74c3c,#f39c12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff}
+        .header-text{flex-grow:1}
+        .header-text h1{color:#2c3e50;font-size:2em;margin-bottom:5px}
+        .header-text p{color:#666}
         .content{background:#fff;border-radius:20px;padding:40px;box-shadow:0 10px 30px rgba(0,0,0,0.1)}
         .form-group{margin-bottom:20px}
         label{display:block;margin-bottom:8px;font-weight:600;color:#2c3e50}
-        input{width:100%;padding:12px 16px;border:2px solid #e0e0e0;border-radius:10px;font-size:14px;transition:0.2s}
-        input:focus{outline:none;border-color:#e74c3c;box-shadow:0 0 0 3px rgba(231,76,60,0.1)}
+        select, input{width:100%;padding:12px 16px;border:2px solid #e0e0e0;border-radius:10px;font-size:14px;transition:0.2s}
+        select:focus, input:focus{outline:none;border-color:#e74c3c;box-shadow:0 0 0 3px rgba(231,76,60,0.1)}
         .form-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
         .product-item{background:#f8f9fa;border-radius:12px;padding:15px;margin-bottom:10px;border:1px solid #e0e0e0}
         .product-grid{display:grid;grid-template-columns:1fr 100px 120px;gap:10px}
@@ -235,14 +315,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_docx'])) {
         .success-message{background:#d4edda;color:#155724;padding:15px;border-radius:10px;margin-bottom:20px;border-left:4px solid #27ae60}
         .error-message{background:#f8d7da;color:#721c24;padding:15px;border-radius:10px;margin-bottom:20px;border-left:4px solid #dc3545}
         .download-btn{background:#27ae60;color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:10px}
-        @media (max-width:768px){.product-grid,.form-row,.button-group{grid-template-columns:1fr}.content{padding:25px}}
+        .client-select{background:#fff;cursor:pointer}
+        .or-divider{text-align:center;margin:10px 0;color:#999;font-size:12px}
+        @media (max-width:768px){.product-grid,.form-row{grid-template-columns:1fr}.header{flex-direction:column;text-align:center}}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>🪑 АСТИ Мебель</h1>
-        <p>Производство мебели на заказ | Генератор коммерческих предложений</p>
+        <div class="logo">
+            <?php if (file_exists('logo.png')): ?>
+                <img src="logo.png" alt="Логотип">
+            <?php else: ?>
+                <div class="logo-placeholder">🪑</div>
+            <?php endif; ?>
+        </div>
+        <div class="header-text">
+            <h1>АСТИ Мебель</h1>
+            <p>Производство мебели на заказ | Генератор коммерческих предложений</p>
+        </div>
     </div>
     <div class="content">
         <?php if ($generationMessage): ?>
@@ -259,48 +350,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_docx'])) {
         
         <form method="POST" id="mainForm">
             <div class="form-row">
-                <div class="form-group"><label>🏢 Ваша компания</label><input type="text" name="company_name" required value="АСТИ Мебель"></div>
-                <div class="form-group"><label>👤 ФИО клиента</label><input type="text" name="client_name" required placeholder="Иванов Иван Иванович"></div>
+                <div class="form-group">
+                    <label>Ваша компания</label>
+                    <input type="text" name="company_name" required value="АСТИ Мебель">
+                </div>
+                <div class="form-group">
+                    <label>Выбрать клиента</label>
+                    <select name="client_id" class="client-select" onchange="fillClientData(this)">
+                        <option value="">-- Новый клиент --</option>
+                        <?php foreach ($clients as $client): ?>
+                        <option value="<?php echo $client['id']; ?>" 
+                                data-name="<?php echo htmlspecialchars($client['name']); ?>"
+                                data-company="<?php echo htmlspecialchars($client['company']); ?>">
+                            <?php echo htmlspecialchars($client['name']); ?> (<?php echo htmlspecialchars($client['company']); ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
-            <div class="form-group"><label>🏭 Название организации</label><input type="text" name="client_company" placeholder="ООО Эльдорадо"></div>
+            
+            <div class="or-divider">— или укажите нового клиента —</div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ФИО клиента</label>
+                    <input type="text" name="client_name" id="client_name" placeholder="Иванов Иван Иванович">
+                </div>
+                <div class="form-group">
+                    <label>Название организации</label>
+                    <input type="text" name="client_company" id="client_company" placeholder="ООО Эльдорадо">
+                </div>
+            </div>
+            
             <div class="form-group">
-                <label>📦 Изделия мебели</label>
+                <label>Изделия мебели</label>
                 <div id="productsContainer">
-                    <div class="product-item"><div class="product-grid"><input type="text" name="products[]" placeholder="Наименование изделия"><input type="number" name="quantities[]" placeholder="Кол-во" value="1"><input type="text" name="prices[]" placeholder="Цена"></div></div>
+                    <div class="product-item">
+                        <div class="product-grid">
+                            <select name="products[]" class="product-select" onchange="updatePrice(this)">
+                                <option value="">-- Выберите товар --</option>
+                                <?php foreach ($productsList as $product): ?>
+                                <option value="<?php echo htmlspecialchars($product['name']); ?>" 
+                                        data-price="<?php echo $product['price']; ?>">
+                                    <?php echo htmlspecialchars($product['name']); ?> - <?php echo number_format($product['price'], 0, '', ' '); ?> ₽
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="number" name="quantities[]" placeholder="Кол-во" value="1" step="any">
+                            <input type="text" name="prices[]" placeholder="Цена" class="price-input">
+                        </div>
+                    </div>
                 </div>
                 <button type="button" class="add-product" onclick="addProduct()">+ Добавить изделие</button>
             </div>
-            <div class="form-group"><label>💰 Скидка (%)</label><input type="number" name="discount" step="any" min="0" max="100" value="0"></div>
             
-           <div class="button-group">
-    <button type="submit" name="generate_docx" class="btn-docx">📄 Создать DOCX</button>
-    <button type="button" class="btn-pdf" onclick="submitToPDF()">📑 Создать PDF</button>
-</div>
+            <div class="form-group">
+                <label>Скидка (%)</label>
+                <input type="number" name="discount" step="any" min="0" max="100" value="0">
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" name="generate_docx" class="btn-docx" onclick="this.form.action=''; this.form.target='';">Создать DOCX</button>
+                <button type="button" class="btn-pdf" onclick="submitToPDF()">Создать PDF</button>
+            </div>
         </form>
     </div>
 </div>
 
 <script>
+function fillClientData(select) {
+    const option = select.options[select.selectedIndex];
+    if (option.value) {
+        document.getElementById('client_name').value = option.getAttribute('data-name') || '';
+        document.getElementById('client_company').value = option.getAttribute('data-company') || '';
+    } else {
+        document.getElementById('client_name').value = '';
+        document.getElementById('client_company').value = '';
+    }
+}
+
+function updatePrice(select) {
+    const option = select.options[select.selectedIndex];
+    const price = option.getAttribute('data-price') || 0;
+    const priceInput = select.closest('.product-grid').querySelector('.price-input');
+    if (priceInput) {
+        priceInput.value = price;
+    }
+}
+
 function addProduct() {
     const container = document.getElementById('productsContainer');
     const div = document.createElement('div');
     div.className = 'product-item';
-    div.innerHTML = '<div class="product-grid"><input type="text" name="products[]" placeholder="Наименование изделия"><input type="number" name="quantities[]" placeholder="Кол-во" value="1"><input type="text" name="prices[]" placeholder="Цена"></div><button type="button" class="remove-product" onclick="this.parentElement.remove()">🗑 Удалить</button>';
+    div.innerHTML = `
+        <div class="product-grid">
+            <select name="products[]" class="product-select" onchange="updatePrice(this)">
+                <option value="">-- Выберите товар --</option>
+                <?php foreach ($productsList as $product): ?>
+                <option value="<?php echo htmlspecialchars($product['name']); ?>" 
+                        data-price="<?php echo $product['price']; ?>">
+                    <?php echo htmlspecialchars($product['name']); ?> - <?php echo number_format($product['price'], 0, '', ' '); ?> ₽
+                </option>
+                <?php endforeach; ?>
+            </select>
+            <input type="number" name="quantities[]" placeholder="Кол-во" value="1" step="any">
+            <input type="text" name="prices[]" placeholder="Цена" class="price-input">
+        </div>
+        <button type="button" class="remove-product" onclick="this.parentElement.remove()">Удалить</button>
+    `;
     container.appendChild(div);
 }
 
 function submitToPDF() {
-    // Собираем данные формы
     var form = document.getElementById('mainForm');
     var formData = new FormData(form);
-    
-    // Создаем временную форму для отправки PDF
     var pdfForm = document.createElement('form');
     pdfForm.method = 'POST';
     pdfForm.action = 'generate_pdf.php';
     pdfForm.target = '_blank';
-    
-    // Копируем все поля
     for (var pair of formData.entries()) {
         var input = document.createElement('input');
         input.type = 'hidden';
@@ -308,7 +475,6 @@ function submitToPDF() {
         input.value = pair[1];
         pdfForm.appendChild(input);
     }
-    
     document.body.appendChild(pdfForm);
     pdfForm.submit();
     document.body.removeChild(pdfForm);

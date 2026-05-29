@@ -1,0 +1,53 @@
+﻿version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: crm-asti-web
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - DOCKER_ENV=true
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - crm-network
+
+  db:
+    image: mysql:8.0
+    container_name: crm-asti-db
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: crm_asti
+      MYSQL_USER: crm_user
+      MYSQL_PASSWORD: crm_password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - crm-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: crm-asti-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      - db
+    networks:
+      - crm-network
+
+networks:
+  crm-network:
+    driver: bridge
+
+volumes:
+  db_data:

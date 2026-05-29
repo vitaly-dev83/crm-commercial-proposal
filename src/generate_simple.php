@@ -1,6 +1,6 @@
 <?php
 /**
- * Упрощенный генератор коммерческих предложений
+ * РЈРїСЂРѕС‰РµРЅРЅС‹Р№ РіРµРЅРµСЂР°С‚РѕСЂ РєРѕРјРјРµСЂС‡РµСЃРєРёС… РїСЂРµРґР»РѕР¶РµРЅРёР№
  */
 
 session_start();
@@ -9,21 +9,21 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use PhpOffice\PhpWord\TemplateProcessor;
 
-// Тестовые данные сессии
+// РўРµСЃС‚РѕРІС‹Рµ РґР°РЅРЅС‹Рµ СЃРµСЃСЃРёРё
 $_SESSION['user_id'] = 1;
 $_SESSION['user_role'] = 'admin';
 
-// Получаем параметры
+// РџРѕР»СѓС‡Р°РµРј РїР°СЂР°РјРµС‚СЂС‹
 $deal_id = $_GET['deal_id'] ?? 1;
 
-echo "<h2>Генерация коммерческого предложения</h2>";
+echo "<h2>Р“РµРЅРµСЂР°С†РёСЏ РєРѕРјРјРµСЂС‡РµСЃРєРѕРіРѕ РїСЂРµРґР»РѕР¶РµРЅРёСЏ</h2>";
 
 try {
-    // 1. Подключение к БД
+    // 1. РџРѕРґРєР»СЋС‡РµРЅРёРµ Рє Р‘Р”
     $db = Database::getConnection();
-    echo "✅ Подключение к БД успешно<br>";
+    echo "вњ… РџРѕРґРєР»СЋС‡РµРЅРёРµ Рє Р‘Р” СѓСЃРїРµС€РЅРѕ<br>";
     
-    // 2. Получаем данные сделки
+    // 2. РџРѕР»СѓС‡Р°РµРј РґР°РЅРЅС‹Рµ СЃРґРµР»РєРё
     $deal = $db->query("
         SELECT d.*, c.company_name 
         FROM deals d 
@@ -33,36 +33,36 @@ try {
     )->fetch();
     
     if (!$deal) {
-        die("❌ Сделка не найдена");
+        die("вќЊ РЎРґРµР»РєР° РЅРµ РЅР°Р№РґРµРЅР°");
     }
     
-    echo "✅ Сделка: {$deal['deal_name']} (#{$deal['deal_number']})<br>";
+    echo "вњ… РЎРґРµР»РєР°: {$deal['deal_name']} (#{$deal['deal_number']})<br>";
     
-    // 3. Создаем простой документ
+    // 3. РЎРѕР·РґР°РµРј РїСЂРѕСЃС‚РѕР№ РґРѕРєСѓРјРµРЅС‚
     $phpWord = new \PhpOffice\PhpWord\PhpWord();
     $section = $phpWord->addSection();
     
-    // Заголовок
-    $section->addText('КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ', ['bold' => true, 'size' => 16]);
+    // Р—Р°РіРѕР»РѕРІРѕРє
+    $section->addText('РљРћРњРњР•Р Р§Р•РЎРљРћР• РџР Р•Р”Р›РћР–Р•РќРР•', ['bold' => true, 'size' => 16]);
     $section->addTextBreak();
     
-    // Информация о сделке
-    $section->addText("Номер сделки: {$deal['deal_number']}");
-    $section->addText("Название: {$deal['deal_name']}");
-    $section->addText("Клиент: {$deal['company_name']}");
-    $section->addText("Бюджет: {$deal['budget']} руб.");
-    $section->addText("Дата: " . date('d.m.Y'));
+    // РРЅС„РѕСЂРјР°С†РёСЏ Рѕ СЃРґРµР»РєРµ
+    $section->addText("РќРѕРјРµСЂ СЃРґРµР»РєРё: {$deal['deal_number']}");
+    $section->addText("РќР°Р·РІР°РЅРёРµ: {$deal['deal_name']}");
+    $section->addText("РљР»РёРµРЅС‚: {$deal['company_name']}");
+    $section->addText("Р‘СЋРґР¶РµС‚: {$deal['budget']} СЂСѓР±.");
+    $section->addText("Р”Р°С‚Р°: " . date('d.m.Y'));
     $section->addTextBreak();
     
-    // Текст предложения
-    $section->addText('Уважаемый клиент!');
-    $section->addText('Представляем вам коммерческое предложение по указанной сделке.');
+    // РўРµРєСЃС‚ РїСЂРµРґР»РѕР¶РµРЅРёСЏ
+    $section->addText('РЈРІР°Р¶Р°РµРјС‹Р№ РєР»РёРµРЅС‚!');
+    $section->addText('РџСЂРµРґСЃС‚Р°РІР»СЏРµРј РІР°Рј РєРѕРјРјРµСЂС‡РµСЃРєРѕРµ РїСЂРµРґР»РѕР¶РµРЅРёРµ РїРѕ СѓРєР°Р·Р°РЅРЅРѕР№ СЃРґРµР»РєРµ.');
     $section->addTextBreak();
     
-    $section->addText('С уважением,');
-    $section->addText('Компания ASTI Мебель');
+    $section->addText('РЎ СѓРІР°Р¶РµРЅРёРµРј,');
+    $section->addText('РљРѕРјРїР°РЅРёСЏ ASTI РњРµР±РµР»СЊ');
     
-    // 4. Сохраняем документ
+    // 4. РЎРѕС…СЂР°РЅСЏРµРј РґРѕРєСѓРјРµРЅС‚
     $output_dir = __DIR__ . '/../storage/';
     if (!is_dir($output_dir)) {
         mkdir($output_dir, 0777, true);
@@ -72,11 +72,11 @@ try {
     $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
     $writer->save($output_file);
     
-    echo "✅ Документ сгенерирован!<br>";
+    echo "вњ… Р”РѕРєСѓРјРµРЅС‚ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅ!<br>";
     
-    // 5. Показываем ссылку
+    // 5. РџРѕРєР°Р·С‹РІР°РµРј СЃСЃС‹Р»РєСѓ
     $web_path = str_replace($_SERVER['DOCUMENT_ROOT'], '', $output_file);
-    echo "<h3 style='color: green;'>🎉 Готово!</h3>";
+    echo "<h3 style='color: green;'>рџЋ‰ Р“РѕС‚РѕРІРѕ!</h3>";
     echo "<p><a href='$web_path' download style='
         padding: 15px 30px;
         background: #4CAF50;
@@ -84,10 +84,10 @@ try {
         text-decoration: none;
         border-radius: 5px;
         font-size: 18px;
-    '>📥 Скачать коммерческое предложение</a></p>";
+    '>рџ“Ґ РЎРєР°С‡Р°С‚СЊ РєРѕРјРјРµСЂС‡РµСЃРєРѕРµ РїСЂРµРґР»РѕР¶РµРЅРёРµ</a></p>";
     
 } catch (Exception $e) {
-    echo "<h3 style='color: red;'>❌ Ошибка:</h3>";
+    echo "<h3 style='color: red;'>вќЊ РћС€РёР±РєР°:</h3>";
     echo $e->getMessage();
 }
 ?>

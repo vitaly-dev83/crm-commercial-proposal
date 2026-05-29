@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // generate_pdf.php - PDF генератор для АСТИ Мебель
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -101,8 +101,8 @@ foreach ($products as $idx => $product) {
     <td align="center">' . ($idx + 1) . '</td>
     <td>' . htmlspecialchars($product) . '</td>
     <td align="center">' . $qty . '</td>
-    <td align="right">' . number_format($price, 2) . ' ₽</td>
-    <td align="right">' . number_format($sum, 2) . ' ₽</td>
+    <td align="right">' . number_format($price, 2) . ' ?</td>
+    <td align="right">' . number_format($sum, 2) . ' ?</td>
 </tr>';
     }
 }
@@ -114,27 +114,27 @@ if ($discount > 0) {
     $html .= '
 <tr style="background-color: #f8f9fa;">
     <td colspan="4" align="left"><strong>Подытог:</strong></td>
-    <td align="right"><strong>' . number_format($total, 2) . ' ₽</strong></td>
+    <td align="right"><strong>' . number_format($total, 2) . ' ?</strong></td>
 </tr>
 <tr style="background-color: #f8f9fa;">
     <td colspan="4" align="left"><strong style="color: #e74c3c;">Скидка ' . $discount . '%:</strong></td>
-    <td align="right" style="color: #e74c3c;"><strong>- ' . number_format($discountAmount, 2) . ' ₽</strong></td>
+    <td align="right" style="color: #e74c3c;"><strong>- ' . number_format($discountAmount, 2) . ' ?</strong></td>
 </tr>';
 }
 
 $html .= '
 <tr style="background-color: #e8f8f5;">
     <td colspan="4" align="left"><strong>ИТОГО К ОПЛАТЕ:</strong></td>
-    <td align="right"><strong style="color: #e74c3c; font-size: 11pt;">' . number_format($finalTotal, 2) . ' ₽</strong></td>
+    <td align="right"><strong style="color: #e74c3c; font-size: 11pt;">' . number_format($finalTotal, 2) . ' ?</strong></td>
 </td>
 </table>
 
-<p style="font-size: 8pt; margin: 8px 0 3px 0;"><strong>⭐ НАШИ ПРЕИМУЩЕСТВА</strong></p>
-<p style="font-size: 7pt; margin: 2px 0;">🏆 Лидер рынка с 2010 года | ⚡ Индивидуальный подход | 🔧 Своё производство</p>
+<p style="font-size: 8pt; margin: 8px 0 3px 0;"><strong>? НАШИ ПРЕИМУЩЕСТВА</strong></p>
+<p style="font-size: 7pt; margin: 2px 0;">?? Лидер рынка с 2010 года | ? Индивидуальный подход | ?? Своё производство</p>
 
-<p style="font-size: 8pt; margin: 8px 0 3px 0;"><strong>📋 УСЛОВИЯ СОТРУДНИЧЕСТВА</strong></p>
-<p style="font-size: 7pt; margin: 2px 0;">✅ Срок изготовления: 7-14 дней | ✅ Доставка: бесплатно по Москве | ✅ Гарантия: 12-36 месяцев</p>
-<p style="font-size: 7pt; margin: 2px 0;">💰 Оплата: 50% предоплата | 📅 Сборка: включена в стоимость | 🛠 Материалы: ЛДСП/МДФ/массив</p>
+<p style="font-size: 8pt; margin: 8px 0 3px 0;"><strong>?? УСЛОВИЯ СОТРУДНИЧЕСТВА</strong></p>
+<p style="font-size: 7pt; margin: 2px 0;">? Срок изготовления: 7-14 дней | ? Доставка: бесплатно по Москве | ? Гарантия: 12-36 месяцев</p>
+<p style="font-size: 7pt; margin: 2px 0;">?? Оплата: 50% предоплата | ?? Сборка: включена в стоимость | ?? Материалы: ЛДСП/МДФ/массив</p>
 
 <!-- Отступ 3 см перед подписями (используем margin-top) -->
 <div style="margin-top: 85px;"></div>

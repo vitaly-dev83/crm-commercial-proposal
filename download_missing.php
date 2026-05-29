@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // download_missing.php - Скачивание недостающих файлов
 $files = [
     'Text.php' => 'https://raw.githubusercontent.com/PHPOffice/PHPWord/0.18.3/src/PhpWord/Element/Text.php',
@@ -20,9 +20,9 @@ foreach ($files as $name => $url) {
     $content = @file_get_contents($url);
     if ($content !== false) {
         file_put_contents($localPath, $content);
-        echo "<p style='color:green'>✅ $name скачан</p>";
+        echo "<p style='color:green'>? $name скачан</p>";
     } else {
-        echo "<p style='color:orange'>⚠ $name не скачан</p>";
+        echo "<p style='color:orange'>? $name не скачан</p>";
     }
 }
 

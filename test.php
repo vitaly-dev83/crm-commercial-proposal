@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // test.php - Простой тест
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -9,7 +9,7 @@ echo "<h1>Тест CRM ASTI</h1>";
 
 // Проверка PHPWord
 if (class_exists('PhpOffice\PhpWord\PhpWord')) {
-    echo "<p style='color:green'>✅ PHPWord загружен!</p>";
+    echo "<p style='color:green'>? PHPWord загружен!</p>";
     
     try {
         // Создаем простой документ
@@ -18,13 +18,13 @@ if (class_exists('PhpOffice\PhpWord\PhpWord')) {
         $section->addText('Тест CRM ASTI');
         $section->addText('Дата: ' . date('d.m.Y H:i:s'));
         
-        echo "<p style='color:green'>✅ Документ создан!</p>";
+        echo "<p style='color:green'>? Документ создан!</p>";
         
     } catch (Exception $e) {
-        echo "<p style='color:red'>❌ Ошибка: " . $e->getMessage() . "</p>";
+        echo "<p style='color:red'>? Ошибка: " . $e->getMessage() . "</p>";
     }
 } else {
-    echo "<p style='color:red'>❌ PHPWord не загружен</p>";
+    echo "<p style='color:red'>? PHPWord не загружен</p>";
 }
 
 // Проверка файлов
@@ -37,6 +37,6 @@ $files = [
 
 foreach ($files as $file) {
     $path = __DIR__ . '/' . $file;
-    echo file_exists($path) ? "✅ $file<br>" : "❌ $file<br>";
+    echo file_exists($path) ? "? $file<br>" : "? $file<br>";
 }
 ?>

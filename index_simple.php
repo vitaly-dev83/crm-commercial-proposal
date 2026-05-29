@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>🪑 АСТИ Мебель</h1>
+    <h1>?? АСТИ Мебель</h1>
     <form method="POST" action="generate_pdf.php" target="_blank" id="pdfForm">
         <label>Ваша компания:</label>
         <input type="text" name="company_name" value="АСТИ Мебель" required><br>
@@ -37,7 +37,7 @@
         <label>Скидка (%):</label>
         <input type="number" name="discount" value="10"><br><br>
         
-        <button type="submit">📑 Создать PDF</button>
+        <button type="submit">?? Создать PDF</button>
     </form>
 </div>
 

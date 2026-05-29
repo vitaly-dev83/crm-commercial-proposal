@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // generate.php - Прямая генерация КП через командную строку
 require_once 'autoload.php';
 
@@ -58,13 +58,13 @@ try {
         $table->addCell(2000)->addText($index + 1);
         $table->addCell(5000)->addText($item['name']);
         $table->addCell(2000)->addText($item['qty']);
-        $table->addCell(2000)->addText(number_format($item['price'], 2) . ' ₽');
-        $table->addCell(2000)->addText(number_format($sum, 2) . ' ₽');
+        $table->addCell(2000)->addText(number_format($item['price'], 2) . ' ?');
+        $table->addCell(2000)->addText(number_format($sum, 2) . ' ?');
     }
     
     $table->addRow();
     $table->addCell(11000, ['gridSpan' => 4])->addText('ИТОГО:', ['bold' => true]);
-    $table->addCell(2000)->addText(number_format($total, 2) . ' ₽', ['bold' => true]);
+    $table->addCell(2000)->addText(number_format($total, 2) . ' ?', ['bold' => true]);
     
     $section->addTextBreak(1);
     $section->addText('С уважением,', ['bold' => true]);
@@ -80,11 +80,11 @@ try {
     $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
     $objWriter->save($filename);
     
-    echo "✅ КП успешно создано!\n";
-    echo "📁 Файл сохранен: {$filename}\n";
-    echo "📥 Путь: " . realpath($filename) . "\n";
+    echo "? КП успешно создано!\n";
+    echo "?? Файл сохранен: {$filename}\n";
+    echo "?? Путь: " . realpath($filename) . "\n";
     
 } catch (Exception $e) {
-    echo "❌ Ошибка: " . $e->getMessage() . "\n";
+    echo "? Ошибка: " . $e->getMessage() . "\n";
 }
 ?>

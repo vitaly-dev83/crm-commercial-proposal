@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // autoload.php - Простой автозагрузчик
 spl_autoload_register(function ($class) {
     // Для PHPWord
