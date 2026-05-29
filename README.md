@@ -2,7 +2,6 @@
 
 **Генератор коммерческих предложений для мебельной компании**
 
-
 <p align="center">
   <a href="https://github.com/vitaly-dev83/crm-commercial-proposal/codespaces/new">
     <img src="https://img.shields.io/badge/🚀-Открыть_в_Codespaces-2ea44f?style=for-the-badge&logo=github" alt="Open in Codespaces">
